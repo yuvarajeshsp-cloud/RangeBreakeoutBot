@@ -2,7 +2,7 @@
 // © LuxAlgo
 
 //@version=6
-indicator("Range Intelligence Suite", "Range Intel", overlay = true, max_boxes_count = 500, max_lines_count = 500, max_polylines_count = 100)
+indicator("Range Intelligence Suite", "Range Intel", overlay = true, max_boxes_count = 500, max_lines_count = 500, max_polylines_count = 100, max_labels_count = 500)
 
 //---------------------------------------------------------------------------------------------------------------------}
 // Constants
@@ -49,6 +49,12 @@ string VP_GROUP         = 'Volume Profile'
 bool showVPInput        = input.bool(true, 'Show Volume Profile', group = VP_GROUP, tooltip = 'Displays a volume histogram to the right of the consolidation range.')
 int vpRowsInput         = input.int(10, 'Rows', minval = 5, maxval = 100, group = VP_GROUP, tooltip = 'Number of horizontal bins. Lower values make bins look thicker.')
 int vpWidthInput        = input.int(30, 'Profile Max Width (%)', minval = 1, maxval = 100, group = VP_GROUP, tooltip = 'Maximum horizontal length of the volume bars as a percentage of the range duration.')
+
+string POSITION_GROUP   = 'Trade Zones'
+bool showPositionsInput = input.bool(true, 'Show Long/Short Positions', group = POSITION_GROUP, tooltip = 'Draws a TradingView-style position box (entry/TP/SL) whenever a range breaks out.')
+float riskRewardInput   = input.float(2.0, 'Risk : Reward Ratio', minval = 0.1, step = 0.1, group = POSITION_GROUP, tooltip = 'Take profit distance as a multiple of the stop-loss risk distance.')
+int positionTransparencyInput = input.int(85, 'Zone Transparency', minval = 0, maxval = 100, group = POSITION_GROUP)
+int maxPositionHistoryInput   = input.int(50, 'Max Position History', minval = 1, maxval = 200, group = POSITION_GROUP, tooltip = 'Number of closed position boxes kept on the chart before the oldest is removed.')
 
 string DASHBOARD_GROUP  = 'Dashboard'
 bool dashboardInput     = input.bool(true, 'Dashboard', group = DASHBOARD_GROUP)
@@ -115,6 +121,40 @@ method delete(RangeVisuals this) =>
     if not na(this.extBottomTag)
         this.extBottomTag.delete()
 
+// Position (Long/Short) Management
+type Position
+    int entryIdx
+    float entryPrice
+    float sl
+    float tp
+    bool isLong
+    bool closed
+    box profitBox
+    box lossBox
+    line entryLine
+    label entryTag
+    label tpTag
+    label slTag
+    label outcomeTag
+
+var Position[] positions = array.new<Position>()
+
+method delete(Position this) =>
+    if not na(this.profitBox)
+        this.profitBox.delete()
+    if not na(this.lossBox)
+        this.lossBox.delete()
+    if not na(this.entryLine)
+        this.entryLine.delete()
+    if not na(this.entryTag)
+        this.entryTag.delete()
+    if not na(this.tpTag)
+        this.tpTag.delete()
+    if not na(this.slTag)
+        this.slTag.delete()
+    if not na(this.outcomeTag)
+        this.outcomeTag.delete()
+
 // Core Logic Calculations
 float atr               = ta.atr(lengthInput)
 float highestHigh       = ta.highest(high, lengthInput)
@@ -174,6 +214,23 @@ drawVP(int endIdx, float rHigh, float rLow, int rows, int maxWidth, float[] bBin
     // Close back at top-left anchor
     array.push(points, chart.point.from_index(endIdx, rHigh))
     polyline.new(points, curved = false, closed = true, line_color = na, fill_color = vpColor)
+
+// Open a Long/Short position box at a breakout, sized by risk:reward
+openPosition(bool isLong, float entryPrice, float slPrice, float rr, color longColor, color shortColor, int transparency) =>
+    float risk       = math.abs(entryPrice - slPrice)
+    float tpPrice    = isLong ? entryPrice + risk * rr : entryPrice - risk * rr
+    color profitColor = color.new(isLong ? longColor : shortColor, transparency)
+    color lossColor   = color.new(isLong ? shortColor : longColor, transparency)
+
+    box pBox = box.new(bar_index, isLong ? tpPrice : entryPrice, bar_index, isLong ? entryPrice : tpPrice, border_color = na, bgcolor = profitColor)
+    box lBox = box.new(bar_index, isLong ? entryPrice : slPrice, bar_index, isLong ? slPrice : entryPrice, border_color = na, bgcolor = lossColor)
+    line eLine = line.new(bar_index, entryPrice, bar_index, entryPrice, color = color.new(color.white, 30), style = line.style_dashed, width = 1)
+
+    label eTag = label.new(bar_index, entryPrice, (isLong ? "Long " : "Short ") + str.tostring(entryPrice, format.mintick), style = label.style_label_left, color = color.new(color.gray, 10), textcolor = color.white, size = size.small)
+    label tTag = label.new(bar_index, tpPrice, "TP " + str.tostring(tpPrice, format.mintick) + "  (" + str.tostring(rr, "#.##") + "R)", style = label.style_label_left, color = longColor, textcolor = color.white, size = size.small)
+    label sTag = label.new(bar_index, slPrice, "SL " + str.tostring(slPrice, format.mintick), style = label.style_label_left, color = shortColor, textcolor = color.white, size = size.small)
+
+    Position.new(bar_index, entryPrice, slPrice, tpPrice, isLong, false, pBox, lBox, eLine, eTag, tTag, sTag, na)
 
 //---------------------------------------------------------------------------------------------------------------------}
 // Main Range Logic
@@ -283,8 +340,17 @@ if rangeActive
     int dynamicWidth = math.round((bar_index - rangeStartIdx) * (vpWidthInput / 100.0))
 
     // Check for Breakout (Range Exit)
-    if close > rangeHigh or close < rangeLow
+    bool breakoutUp   = close > rangeHigh
+    bool breakoutDown = close < rangeLow
+    if breakoutUp or breakoutDown
         rangeActive := false
+
+        // Open a Long/Short position box off this breakout
+        if showPositionsInput
+            if breakoutUp
+                positions.push(openPosition(true, close, rangeLow, riskRewardInput, bullColorInput, bearColorInput, positionTransparencyInput))
+            else
+                positions.push(openPosition(false, close, rangeHigh, riskRewardInput, bullColorInput, bearColorInput, positionTransparencyInput))
 
         // Finalize Visuals
         activeTop.set_x2(bar_index), activeBottom.set_x2(bar_index), activeMid.set_x2(bar_index)
@@ -346,6 +412,41 @@ if sweepHigh and showSweepsInput
     label.new(bar_index, high, "SH", color = #00000000, textcolor = bearColorInput, style = label.style_label_down, size = size.tiny)
 if sweepLow and showSweepsInput
     label.new(bar_index, low, "SL", color = #00000000, textcolor = bullColorInput, style = label.style_label_up, size = size.tiny)
+
+//---------------------------------------------------------------------------------------------------------------------}
+// Position Management
+//---------------------------------------------------------------------------------------------------------------------{
+// Grow each open position's box/tags to the current bar and check for TP/SL hits
+if array.size(positions) > 0
+    for i = array.size(positions) - 1 to 0
+        Position p = array.get(positions, i)
+        if not p.closed
+            p.profitBox.set_right(bar_index)
+            p.lossBox.set_right(bar_index)
+            p.entryLine.set_x2(bar_index)
+            p.entryTag.set_x(bar_index)
+            p.tpTag.set_x(bar_index)
+            p.slTag.set_x(bar_index)
+
+            bool hitSL = p.isLong ? low <= p.sl : high >= p.sl
+            bool hitTP = not hitSL and (p.isLong ? high >= p.tp : low <= p.tp)
+
+            if hitSL or hitTP
+                p.closed := true
+                p.outcomeTag := label.new(bar_index, hitTP ? p.tp : p.sl, hitTP ? "TP HIT" : "SL HIT", style = p.isLong ? label.style_label_down : label.style_label_up, color = hitTP ? bullColorInput : bearColorInput, textcolor = color.white, size = size.small)
+
+    // Trim oldest closed positions beyond the configured history limit
+    int closedCount = 0
+    for p in positions
+        if p.closed
+            closedCount += 1
+    if closedCount > maxPositionHistoryInput
+        for i = 0 to array.size(positions) - 1
+            Position p2 = array.get(positions, i)
+            if p2.closed
+                p2.delete()
+                array.remove(positions, i)
+                break
 
 //---------------------------------------------------------------------------------------------------------------------}
 // Dashboard
