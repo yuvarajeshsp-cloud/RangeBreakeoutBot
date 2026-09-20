@@ -360,12 +360,22 @@ if rangeActive
             else
                 positions.push(openPosition(false, close, rangeHigh, riskRewardInput, bullColorInput, bearColorInput, positionTransparencyInput))
 
-        // Finalize Visuals
-        activeTop.set_x2(bar_index), activeBottom.set_x2(bar_index), activeMid.set_x2(bar_index)
+        // Finalize Visuals - recolor the whole box to a single solid tone based on breakout direction
+        color finalColor = breakoutUp ? bullColorInput : bearColorInput
+        activeTop.set_x2(bar_index)
+        activeTop.set_color(finalColor)
+        activeBottom.set_x2(bar_index)
+        activeBottom.set_color(finalColor)
+        activeMid.set_x2(bar_index)
+        activeMid.set_color(finalColor)
+
+        // Replace the multi-layer gradient with one solid fill in the breakout color
         for l in upperGrad
-            l.set_x2(bar_index)
+            l.delete()
         for l in lowerGrad
-            l.set_x2(bar_index)
+            l.delete()
+        array.clear(upperGrad), array.clear(lowerGrad)
+        linefill.new(activeTop, activeBottom, color.new(finalColor, zoneTransparencyInput))
 
         if not na(activePOC)
             activePOC.set_x2(bar_index)
