@@ -41,6 +41,9 @@ color bearColorInput    = input.color(BEAR_COLOR, 'Bearish Color', inline = 'Col
 int zoneTransparencyInput = input.int(85, 'Fill Transparency', minval = 0, maxval = 100, group = VISUAL_GROUP, tooltip = 'Transparency of the range background fills.')
 bool showPOCInput       = input.bool(true, 'Show Point of Control (POC)', group = VISUAL_GROUP, tooltip = 'Displays the price level with the highest total volume within the range.')
 bool showSweepsInput    = input.bool(true, 'Highlight Liquidity Sweeps', group = VISUAL_GROUP, tooltip = 'Highlights fakeouts where price briefly exits the range but closes back inside.')
+bool extendLevelsInput  = input.bool(true, 'Extend Broken Levels', group = VISUAL_GROUP, tooltip = 'Extends the range high/low lines to the right after a breakout and tags the price.')
+int extensionLengthInput = input.int(30, 'Extension Length (Bars)', minval = 1, maxval = 500, group = VISUAL_GROUP, tooltip = 'Number of bars to extend the broken range levels to the right.')
+color tagColorInput     = input.color(#2962FF, 'Price Tag Color', group = VISUAL_GROUP)
 
 string VP_GROUP         = 'Volume Profile'
 bool showVPInput        = input.bool(true, 'Show Volume Profile', group = VP_GROUP, tooltip = 'Displays a volume histogram to the right of the consolidation range.')
@@ -85,6 +88,10 @@ type RangeVisuals
     line poc
     line[] grads
     polyline vp
+    line extTop
+    line extBottom
+    label extTopTag
+    label extBottomTag
 
 var RangeVisuals[] historicalRanges = array.new<RangeVisuals>()
 
@@ -99,6 +106,14 @@ method delete(RangeVisuals this) =>
             l.delete()
     if not na(this.vp)
         this.vp.delete()
+    if not na(this.extTop)
+        this.extTop.delete()
+    if not na(this.extBottom)
+        this.extBottom.delete()
+    if not na(this.extTopTag)
+        this.extTopTag.delete()
+    if not na(this.extBottomTag)
+        this.extBottomTag.delete()
 
 // Core Logic Calculations
 float atr               = ta.atr(lengthInput)
@@ -288,8 +303,20 @@ if rangeActive
         if showVPInput
             histVP := drawVP(bar_index, rangeHigh, rangeLow, vpRowsInput, dynamicWidth, buyBins, sellBins, totalNetDelta)
 
+        // Extend the broken range levels to the right and tag their price
+        line extTop = na
+        line extBottom = na
+        label extTopTag = na
+        label extBottomTag = na
+        if extendLevelsInput
+            int extEndIdx = bar_index + extensionLengthInput
+            extTop := line.new(bar_index, rangeHigh, extEndIdx, rangeHigh, color = bullColorInput, width = 1)
+            extBottom := line.new(bar_index, rangeLow, extEndIdx, rangeLow, color = bearColorInput, width = 1)
+            extTopTag := label.new(extEndIdx, rangeHigh, str.tostring(rangeHigh, format.mintick), style = label.style_label_left, color = tagColorInput, textcolor = color.white, size = size.small)
+            extBottomTag := label.new(extEndIdx, rangeLow, str.tostring(rangeLow, format.mintick), style = label.style_label_left, color = tagColorInput, textcolor = color.white, size = size.small)
+
         // Store for overlap management
-        historicalRanges.push(RangeVisuals.new(bar_index, activeTop, activeBottom, activeMid, activePOC, array.copy(upperGrad).concat(array.copy(lowerGrad)), histVP))
+        historicalRanges.push(RangeVisuals.new(bar_index, activeTop, activeBottom, activeMid, activePOC, array.copy(upperGrad).concat(array.copy(lowerGrad)), histVP, extTop, extBottom, extTopTag, extBottomTag))
         if historicalRanges.size() > 50
             historicalRanges.shift().delete()
 
