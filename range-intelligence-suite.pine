@@ -55,8 +55,8 @@ bool showPositionsInput = input.bool(true, 'Show Long/Short Positions', group = 
 float riskRewardInput   = input.float(2.0, 'Risk : Reward Ratio', minval = 0.1, step = 0.1, group = POSITION_GROUP, tooltip = 'Take profit distance as a multiple of the stop-loss risk distance.')
 int positionTransparencyInput = input.int(85, 'Zone Transparency', minval = 0, maxval = 100, group = POSITION_GROUP)
 int maxPositionHistoryInput   = input.int(50, 'Max Position History', minval = 1, maxval = 200, group = POSITION_GROUP, tooltip = 'Number of closed position boxes kept on the chart before the oldest is removed.')
-bool showOneRInput      = input.bool(true, 'Show 1:1 (1R) Marker', group = POSITION_GROUP, tooltip = 'Draws a line at the point where reward equals risk (halfway to a 1:2 target).')
-color oneRColorInput    = input.color(color.green, '1:1 Marker Color', group = POSITION_GROUP)
+bool showOneRInput      = input.bool(true, 'Show TP1 (1R) Marker', group = POSITION_GROUP, tooltip = 'Draws a partial take-profit line inside the profit zone at 1R (reward equals risk), ahead of the final TP2 target.')
+color oneRColorInput    = input.color(color.green, 'TP1 Marker Color', group = POSITION_GROUP)
 
 string DASHBOARD_GROUP  = 'Dashboard'
 bool dashboardInput     = input.bool(true, 'Dashboard', group = DASHBOARD_GROUP)
@@ -244,14 +244,14 @@ openPosition(bool isLong, float entryPrice, float slPrice, float rr, color longC
     line eLine = line.new(bar_index, entryPrice, bar_index, entryPrice, color = color.new(color.white, 30), style = line.style_dashed, width = 1)
 
     label eTag = label.new(bar_index, entryPrice, (isLong ? "Long " : "Short ") + str.tostring(entryPrice, format.mintick), style = label.style_label_left, color = color.new(color.gray, 10), textcolor = color.white, size = size.small)
-    label tTag = label.new(bar_index, tpPrice, "TP " + str.tostring(tpPrice, format.mintick) + "  (" + str.tostring(rr, "#.##") + "R)", style = label.style_label_left, color = longColor, textcolor = color.white, size = size.small)
+    label tTag = label.new(bar_index, tpPrice, "TP2 " + str.tostring(tpPrice, format.mintick) + "  (" + str.tostring(rr, "#.##") + "R)", style = label.style_label_left, color = longColor, textcolor = color.white, size = size.small)
     label sTag = label.new(bar_index, slPrice, "SL " + str.tostring(slPrice, format.mintick), style = label.style_label_left, color = shortColor, textcolor = color.white, size = size.small)
 
     line oLine = na
     label oTag = na
     if showOneR
         oLine := line.new(bar_index, oneRPrice, bar_index, oneRPrice, color = oneRColor, style = line.style_dashed, width = 1)
-        oTag  := label.new(bar_index, oneRPrice, "1:1  " + str.tostring(oneRPrice, format.mintick), style = label.style_label_left, color = oneRColor, textcolor = color.white, size = size.small)
+        oTag  := label.new(bar_index, oneRPrice, "TP1 " + str.tostring(oneRPrice, format.mintick) + "  (1R)", style = label.style_label_left, color = oneRColor, textcolor = color.white, size = size.small)
 
     Position.new(bar_index, entryPrice, slPrice, tpPrice, isLong, false, pBox, lBox, eLine, eTag, tTag, sTag, na, oLine, oTag)
 
