@@ -215,6 +215,14 @@ drawVP(int endIdx, float rHigh, float rLow, int rows, int maxWidth, float[] bBin
     array.push(points, chart.point.from_index(endIdx, rHigh))
     polyline.new(points, curved = false, closed = true, line_color = na, fill_color = vpColor)
 
+// True while any previously opened position hasn't hit TP or SL yet
+hasOpenPosition(Position[] arr) =>
+    bool found = false
+    for p in arr
+        if not p.closed
+            found := true
+    found
+
 // Open a Long/Short position box at a breakout, sized by risk:reward
 openPosition(bool isLong, float entryPrice, float slPrice, float rr, color longColor, color shortColor, int transparency) =>
     float risk       = math.abs(entryPrice - slPrice)
@@ -345,8 +353,8 @@ if rangeActive
     if breakoutUp or breakoutDown
         rangeActive := false
 
-        // Open a Long/Short position box off this breakout
-        if showPositionsInput
+        // Open a Long/Short position box off this breakout (one at a time)
+        if showPositionsInput and not hasOpenPosition(positions)
             if breakoutUp
                 positions.push(openPosition(true, close, rangeLow, riskRewardInput, bullColorInput, bearColorInput, positionTransparencyInput))
             else
