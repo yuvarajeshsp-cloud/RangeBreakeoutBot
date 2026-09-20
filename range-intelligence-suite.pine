@@ -55,6 +55,8 @@ bool showPositionsInput = input.bool(true, 'Show Long/Short Positions', group = 
 float riskRewardInput   = input.float(2.0, 'Risk : Reward Ratio', minval = 0.1, step = 0.1, group = POSITION_GROUP, tooltip = 'Take profit distance as a multiple of the stop-loss risk distance.')
 int positionTransparencyInput = input.int(85, 'Zone Transparency', minval = 0, maxval = 100, group = POSITION_GROUP)
 int maxPositionHistoryInput   = input.int(50, 'Max Position History', minval = 1, maxval = 200, group = POSITION_GROUP, tooltip = 'Number of closed position boxes kept on the chart before the oldest is removed.')
+bool showOneRInput      = input.bool(true, 'Show 1:1 (1R) Marker', group = POSITION_GROUP, tooltip = 'Draws a line at the point where reward equals risk (halfway to a 1:2 target).')
+color oneRColorInput    = input.color(color.green, '1:1 Marker Color', group = POSITION_GROUP)
 
 string DASHBOARD_GROUP  = 'Dashboard'
 bool dashboardInput     = input.bool(true, 'Dashboard', group = DASHBOARD_GROUP)
@@ -136,6 +138,8 @@ type Position
     label tpTag
     label slTag
     label outcomeTag
+    line oneRLine
+    label oneRTag
 
 var Position[] positions = array.new<Position>()
 
@@ -154,6 +158,10 @@ method delete(Position this) =>
         this.slTag.delete()
     if not na(this.outcomeTag)
         this.outcomeTag.delete()
+    if not na(this.oneRLine)
+        this.oneRLine.delete()
+    if not na(this.oneRTag)
+        this.oneRTag.delete()
 
 // Core Logic Calculations
 float atr               = ta.atr(lengthInput)
@@ -224,9 +232,10 @@ hasOpenPosition(Position[] arr) =>
     found
 
 // Open a Long/Short position box at a breakout, sized by risk:reward
-openPosition(bool isLong, float entryPrice, float slPrice, float rr, color longColor, color shortColor, int transparency) =>
+openPosition(bool isLong, float entryPrice, float slPrice, float rr, color longColor, color shortColor, int transparency, bool showOneR, color oneRColor) =>
     float risk       = math.abs(entryPrice - slPrice)
     float tpPrice    = isLong ? entryPrice + risk * rr : entryPrice - risk * rr
+    float oneRPrice  = isLong ? entryPrice + risk : entryPrice - risk
     color profitColor = color.new(isLong ? longColor : shortColor, transparency)
     color lossColor   = color.new(isLong ? shortColor : longColor, transparency)
 
@@ -238,7 +247,13 @@ openPosition(bool isLong, float entryPrice, float slPrice, float rr, color longC
     label tTag = label.new(bar_index, tpPrice, "TP " + str.tostring(tpPrice, format.mintick) + "  (" + str.tostring(rr, "#.##") + "R)", style = label.style_label_left, color = longColor, textcolor = color.white, size = size.small)
     label sTag = label.new(bar_index, slPrice, "SL " + str.tostring(slPrice, format.mintick), style = label.style_label_left, color = shortColor, textcolor = color.white, size = size.small)
 
-    Position.new(bar_index, entryPrice, slPrice, tpPrice, isLong, false, pBox, lBox, eLine, eTag, tTag, sTag, na)
+    line oLine = na
+    label oTag = na
+    if showOneR
+        oLine := line.new(bar_index, oneRPrice, bar_index, oneRPrice, color = oneRColor, style = line.style_dashed, width = 1)
+        oTag  := label.new(bar_index, oneRPrice, "1:1  " + str.tostring(oneRPrice, format.mintick), style = label.style_label_left, color = oneRColor, textcolor = color.white, size = size.small)
+
+    Position.new(bar_index, entryPrice, slPrice, tpPrice, isLong, false, pBox, lBox, eLine, eTag, tTag, sTag, na, oLine, oTag)
 
 //---------------------------------------------------------------------------------------------------------------------}
 // Main Range Logic
@@ -356,9 +371,9 @@ if rangeActive
         // Open a Long/Short position box off this breakout (one at a time)
         if showPositionsInput and not hasOpenPosition(positions)
             if breakoutUp
-                positions.push(openPosition(true, close, rangeLow, riskRewardInput, bullColorInput, bearColorInput, positionTransparencyInput))
+                positions.push(openPosition(true, close, rangeLow, riskRewardInput, bullColorInput, bearColorInput, positionTransparencyInput, showOneRInput, oneRColorInput))
             else
-                positions.push(openPosition(false, close, rangeHigh, riskRewardInput, bullColorInput, bearColorInput, positionTransparencyInput))
+                positions.push(openPosition(false, close, rangeHigh, riskRewardInput, bullColorInput, bearColorInput, positionTransparencyInput, showOneRInput, oneRColorInput))
 
         // Finalize Visuals - recolor the whole box to a single solid tone based on breakout direction
         color finalColor = breakoutUp ? bullColorInput : bearColorInput
@@ -445,6 +460,10 @@ if array.size(positions) > 0
             p.entryTag.set_x(bar_index)
             p.tpTag.set_x(bar_index)
             p.slTag.set_x(bar_index)
+            if not na(p.oneRLine)
+                p.oneRLine.set_x2(bar_index)
+            if not na(p.oneRTag)
+                p.oneRTag.set_x(bar_index)
 
             bool hitSL = p.isLong ? low <= p.sl : high >= p.sl
             bool hitTP = not hitSL and (p.isLong ? high >= p.tp : low <= p.tp)
