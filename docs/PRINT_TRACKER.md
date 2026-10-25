@@ -6,7 +6,7 @@ From `upstream/hardware/structure/`. `2x_`/`4x_` prefixes mean copies. Settings:
 | --- | ---: | --- | :---: | :---: |
 | `2x_ankle_axis.STL` | 2 | Rigid | [ ] | [ ] |
 | `2x_foot_bottom_tpu.stl` | 2 | TPU | [ ] | [ ] |
-| `2x_hip_rol_output.stl` | 2 | TPU | [ ] | [ ] |
+| `2x_hip_rol_output.stl` | 2 | Rigid | [ ] | [ ] |
 | `2x_hip_rol_shell.stl` | 2 | Rigid | [ ] | [ ] |
 | `2x_hip_yaw2rol.STL` | 2 | Rigid | [ ] | [ ] |
 | `2x_neck.stl` | 2 | Rigid | [ ] | [ ] |
