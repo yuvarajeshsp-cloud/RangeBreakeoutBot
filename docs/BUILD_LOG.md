@@ -3,17 +3,18 @@
 ## Build record
 | Item | Value |
 | --- | --- |
-| Hardware commit | (`git -C upstream/hardware rev-parse --short HEAD`) |
+| Open_Duck_Mini commit | (`git -C upstream/open_duck_mini rev-parse --short HEAD`) |
 | Runtime commit | |
-| RL commit | |
-| Expansion board revision | |
-| UNO Q variant | 2 GB / 4 GB |
+| Playground commit | |
+| Servo version (STS3215 C001 7.4 V?) | |
 | Printer / slicer | |
-| Rigid filament | |
-| TPU filament (hardness) | |
-| Battery pack | |
+| PLA filament | |
+| TPU filament | |
+| Battery cells | |
+| Policy used | BEST_WALK_ONNX_2.onnx |
 
 ## Entries
 
 ### 2026-10-25
-- Started the MicroDuck project. Linked upstream hardware, runtime and RL repos as submodules.
+- Started the MicroDuck project.
+- Switched from XGO-Duck to Open Duck Mini v2 so I can use STS3215 servos bought in India and edit the CAD.
