@@ -1,0 +1,12 @@
+[submodule "upstream/hardware"]
+	path = upstream/hardware
+	url = https://github.com/LuwuDynamics/xgoduck_hardware
+	shallow = true
+[submodule "upstream/runtime"]
+	path = upstream/runtime
+	url = https://github.com/LuwuDynamics/xgoduck_runtime_arduino
+	shallow = true
+[submodule "upstream/rl"]
+	path = upstream/rl
+	url = https://github.com/LuwuDynamics/xgoduck_rl
+	shallow = true
