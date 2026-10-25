@@ -1,13 +1,13 @@
 # Shopping list
 
-Source: `upstream/hardware/BOM.md`. Update **Status** as you go: `todo` → `ordered` → `received` → `checked`.
+Source: `upstream/hardware/BOM.md`. India prices and links: [SHOPPING_LIST_INDIA.md](SHOPPING_LIST_INDIA.md). Update **Status** as you go: `todo` → `ordered` → `received` → `checked`.
 
 | # | Part | Qty | Where | Price | Status |
 | ---: | --- | ---: | --- | ---: | --- |
 | 1 | Arduino UNO Q (2 GB or 4 GB) | 1 | [Arduino Store](https://store.arduino.cc/products/uno-q) | | todo |
 | 2 | Robot expansion board — "Only Robot Driver Board for Arduino UNO Q" | 1 | [Luwu store](https://shop.xgorobot.com/products/robot-driver-board) | | todo |
 | 3 | AMP 3-pin servo cable | 15 | | | todo |
-| 4 | Feetech 1910 servo | 15 | | | todo |
+| 4 | Feetech HD-1910-C001 servo | 15 | | | todo |
 | 5 | 18650 battery pack 8.4 V, XH2.54, > 2500 mAh, > 3C | 1 | | | todo |
 | 6 | 8.4 V Li-ion charger, DC5521 (5.5 × 2.1 mm) plug | 1 | | | todo |
 | 7 | M2 × 6 countersunk flat-end self-tapping screw | 204 | | | todo |

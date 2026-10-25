@@ -10,6 +10,7 @@ This build follows **[XGO-Duck](https://github.com/LuwuDynamics/xgoduck_hardware
 | --- | --- |
 | [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md) | Phase-by-phase plan with checklists — start here |
 | [`docs/SHOPPING_LIST.md`](docs/SHOPPING_LIST.md) | Parts to buy, with status tracking |
+| [`docs/SHOPPING_LIST_INDIA.md`](docs/SHOPPING_LIST_INDIA.md) | Best prices found in India, with links |
 | [`docs/PRINT_TRACKER.md`](docs/PRINT_TRACKER.md) | Every printed part, copies and progress |
 | [`docs/SERVO_MAP.md`](docs/SERVO_MAP.md) | Servo IDs, labels and calibration record |
 | [`docs/BUILD_LOG.md`](docs/BUILD_LOG.md) | Dated notes, problems and fixes |
@@ -36,7 +37,7 @@ Key files once fetched:
 | Subsystem | Part |
 | --- | --- |
 | Controller | Arduino UNO Q (Linux side runs ONNX policy + web UI, STM32 side runs the servo/IMU loop) |
-| Actuators | 15 × Feetech 1910 serial servos (10 legs, 4 neck/head, 1 mouth) |
+| Actuators | 15 × Feetech HD-1910-C001 serial servos (10 legs, 4 neck/head, 1 mouth) |
 | Driver board | Luwu robot expansion board for UNO Q (power, servo bus, QMI8658A IMU) |
 | Power | 8.4 V 18650 pack, XH2.54, > 2500 mAh, > 3C |
 | Body | ~30 STL files, rigid filament + TPU soles/beak |
